@@ -229,19 +229,17 @@ class Cluster(FB):
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
         plt.show()
 
-    def topic_analysis(self, data, feats):
+    def topic_analysis(self, data, feats, n_components, n_top_words=10):
         # Authors: The scikit-learn developers
         # SPDX-License-Identifier: BSD-3-Clause
         # Source: https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html
 
         n_samples = feats.shape[0]
         n_features = feats.shape[1]
-        n_components = 14
-        n_top_words = 15
         init = "nndsvda"
 
         def plot_top_words(model, feature_names, n_top_words, title):
-            fig, axes = plt.subplots(3, 5, figsize=(30, 15), sharex=True)
+            fig, axes = plt.subplots(round(n_components/5+0.5), 5, figsize=(30, 15), sharex=True)
             axes = axes.flatten()
             
             for topic_idx, topic in enumerate(model.components_):

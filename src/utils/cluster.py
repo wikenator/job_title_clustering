@@ -263,7 +263,7 @@ class Cluster(FB):
         # Use tf-idf features for NMF.
         print("Extracting tf-idf features for NMF...")
         tfidf_vectorizer = TfidfVectorizer(
-            max_df=0.95, min_df=2, max_features=n_features, tokenizer=self.regex_tokenizer
+            max_df=0.95, min_df=2, ngram_range=(1,2), max_features=n_features, tokenizer=self.regex_tokenizer
         )
         t0 = time()
         tfidf = tfidf_vectorizer.fit_transform(data)
@@ -272,7 +272,7 @@ class Cluster(FB):
         # Use tf (raw term count) features for LDA.
         print("Extracting tf features for LDA...")
         tf_vectorizer = CountVectorizer(
-            max_df=0.95, min_df=2, max_features=n_features, tokenizer=self.regex_tokenizer
+            max_df=0.95, min_df=2, ngram_range=(1,2), max_features=n_features, tokenizer=self.regex_tokenizer
         )
         t0 = time()
         tf = tf_vectorizer.fit_transform(data)

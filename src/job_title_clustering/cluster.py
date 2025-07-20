@@ -13,7 +13,7 @@ from sklearn.metrics import adjusted_rand_score, homogeneity_completeness_v_meas
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 
-from feature_builder import FeatureBuilder as FB
+from utils.feature_builder import FeatureBuilder as FB
 
 class Cluster(FB):
     def __init__(self):
@@ -165,7 +165,7 @@ class Cluster(FB):
         for n in range(2, 15):
             pipe["dim_reducer"][cluster_config['dim_reduce']].n_components = n
             self.n_components = n
-            self.component_columns = ['component_' + str(i) for i in range(n)]
+            self.component_columns = ['component_' + str(i) for i in range(1, n+1)]
             pipe.fit(feats)
             self.run_pipeline(pipe, feats, labels)
 
@@ -198,6 +198,10 @@ class Cluster(FB):
                 range(2, 15), sse, curve="convex", direction="decreasing"
             )
             print(f"Elbow clusters computed by KneeLocator: {int(kl.elbow)}")
+
+        # reset some variables
+        self.n_components = 2
+        self.component_columns = ['component_' + str(i) for i in range(1, self.n_components+1)]
 
     def show_simple_scatterplot(self, df):
         '''

@@ -109,6 +109,12 @@ class Cluster(FB):
 
         return pipe
     
+    def run_scaler(self, pipe, feats):
+        return pipe["preprocessor"].transform(feats)
+    
+    def run_dim_reducer(self, pipe, data):
+        return pipe["dim_reducer"].transform(data)
+    
     def run_pipeline(self, pipe, feats, labels):
         '''
         Runs all pipeline steps on the given data.
@@ -119,8 +125,8 @@ class Cluster(FB):
         @return: dataframe of results containing principal components, predicted clusters, and true labels
         '''
         true_labels = self.label_encoder.fit_transform(labels)
-        preprocessed_data = pipe["preprocessor"].transform(feats)
-        reduced_data = pipe["dim_reducer"].transform(preprocessed_data)
+        preprocessed_data = self.run_scaler(pipe, feats)
+        reduced_data = self.run_dim_reducer(pipe, preprocessed_data)
         predicted_labels = pipe["clusterer"][self.algo].labels_
 
         df = pd.DataFrame(
@@ -237,15 +243,22 @@ class Cluster(FB):
         n_samples = feats.shape[0]
         n_features = feats.shape[1]
         init = "nndsvda"
+        top_words = {
+            'nmf': None,
+            'plsa': None,
+            'lda': None,
+        }
 
         def plot_top_words(model, feature_names, n_top_words, title):
             fig, axes = plt.subplots(round(n_components/5+0.5), 5, figsize=(30, 15), sharex=True)
             axes = axes.flatten()
+            top_words = []
             
             for topic_idx, topic in enumerate(model.components_):
                 top_features_ind = topic.argsort()[-n_top_words:]
                 top_features = feature_names[top_features_ind]
                 weights = topic[top_features_ind]
+                top_words.append(top_features)
 
                 ax = axes[topic_idx]
                 ax.barh(top_features, weights, height=0.7)
@@ -257,6 +270,8 @@ class Cluster(FB):
 
             plt.subplots_adjust(top=0.90, bottom=0.05, wspace=0.90, hspace=0.3)
             plt.show()
+
+            return top_words
 
         data = data.apply(lambda x: ' '.join(self.regex_tokenizer(x)))
 
@@ -297,9 +312,10 @@ class Cluster(FB):
         print("done in %0.3fs." % (time() - t0))
 
         tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
-        plot_top_words(
+        top = plot_top_words(
             nmf, tfidf_feature_names, n_top_words, "Topics in NMF model (Frobenius norm)"
         )
+        top_words['nmf'] = top
 
         # Fit the NMF model
         print(
@@ -323,12 +339,13 @@ class Cluster(FB):
         print("done in %0.3fs." % (time() - t0))
 
         tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
-        plot_top_words(
+        top = plot_top_words(
             nmf,
             tfidf_feature_names,
             n_top_words,
             "Topics in PLSA model",
         )
+        top_words['plsa'] = top
 
         print(
             "\n" * 2,
@@ -347,4 +364,7 @@ class Cluster(FB):
         print("done in %0.3fs." % (time() - t0))
 
         tf_feature_names = tf_vectorizer.get_feature_names_out()
-        plot_top_words(lda, tf_feature_names, n_top_words, "Topics in LDA model")
+        top = plot_top_words(lda, tf_feature_names, n_top_words, "Topics in LDA model")
+        top_words['lda'] = top
+
+        return top_words

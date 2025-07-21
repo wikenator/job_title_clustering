@@ -13,6 +13,8 @@ pip install -r src/requirements.txt
 python src/setup.py
 ```
 
+In order to use the `ollama` library for LLM chat features in the Jupyter notebook, please follow the instructions at https://ollama.com/.
+
 ## Basic Usage
 
 Import the Cluster class and load your data:

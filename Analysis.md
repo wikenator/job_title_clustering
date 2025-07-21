@@ -12,7 +12,7 @@ Since the analysis involves short texts, I decided to use tools and NLP techniqu
 Python is my programming language of choice because of the availability of machine learning and natural language processing libraries. I am using the following libraries:
 - NLTK: customized text tokenization behavior
 - scikit-learn: word vectorization, algorithm development and analysis
-- matplotlib: visualizations
+- matplotlib, seaborn: visualizations
 - pandas: data manipulation and processing, data input and output
 - numpy: data manipulation and processing
 - umap: dimensionality reduction

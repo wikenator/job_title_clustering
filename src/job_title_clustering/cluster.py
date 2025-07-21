@@ -26,6 +26,31 @@ class Cluster(FB):
         self.component_columns = ['component_1', 'component_2']
 
     def setup_pipeline(self, *args, **kwargs):
+        '''
+        Not all fields must be filled out for every algorithm, picking just one is fine.
+        Format of basic configuration:
+        cluster_config = {
+            "kmeans_kwargs": {
+                "init": "", # random, k-means++
+                "n_init": 50,
+                "max_iter": 500,
+                # "random_state": 1,
+            },
+            "hdbscan_kwargs": {
+                'min_cluster_size': 15,
+                'min_samples': 4,
+                'metric': 'euclidean',
+            },
+            "agglom_kwargs": {
+                'metric': 'euclidean',
+                'linkage': 'ward',
+            },
+            "cluster": "", # kmeans, hdbscan, agglom
+            "scaler": "", # std, minmax
+            "dim_reduce": "", # pca, umap
+            "n_clusters": 3,
+        }
+        '''
         pipeline = []
 
         if kwargs['scaler']:

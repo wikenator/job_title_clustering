@@ -20,6 +20,7 @@ class Cluster(FB):
         super().__init__()
 
         self.algo = None
+        self.true_lbl = None
         self.label_encoder = LabelEncoder()
         self.n_components = 2
         self.component_columns = ['component_1', 'component_2']
@@ -115,7 +116,7 @@ class Cluster(FB):
     def run_dim_reducer(self, pipe, data):
         return pipe["dim_reducer"].transform(data)
     
-    def run_pipeline(self, pipe, feats, labels):
+    def run_pipeline(self, pipe, feats, labels=None):
         '''
         Runs all pipeline steps on the given data.
 
@@ -124,21 +125,28 @@ class Cluster(FB):
         @param labels: output labels for each example
         @return: dataframe of results containing principal components, predicted clusters, and true labels
         '''
-        true_labels = self.label_encoder.fit_transform(labels)
         preprocessed_data = self.run_scaler(pipe, feats)
         reduced_data = self.run_dim_reducer(pipe, preprocessed_data)
         predicted_labels = pipe["clusterer"][self.algo].labels_
+
+        if labels is not None:
+            true_labels = self.label_encoder.fit_transform(labels)
 
         df = pd.DataFrame(
             reduced_data,
             columns=self.component_columns,
         )
-        df["predicted_cluster"] = predicted_labels
-        df["true_label"] = self.label_encoder.inverse_transform(true_labels)
+
+        if labels is not None:
+            df["predicted_cluster"] = predicted_labels
+            df["true_label"] = self.label_encoder.inverse_transform(true_labels)
+            self.true_lbl = labels
+
+        else:
+            self.true_lbl = None
 
         self.pipe_data = preprocessed_data
         self.pred_lbl = predicted_labels
-        self.true_lbl = labels
 
         return df
     
@@ -147,13 +155,17 @@ class Cluster(FB):
         Calculate different performance metrics.
         '''
 
-        return {
-            'ari': adjusted_rand_score(self.true_lbl, self.pred_lbl),
-            'hcv': homogeneity_completeness_v_measure(self.true_lbl, self.pred_lbl),
+        scores = {
             'sil': silhouette_score(self.pipe_data, self.pred_lbl),
         }
+
+        if self.true_lbl is not None:
+            scores['ari'] = adjusted_rand_score(self.true_lbl, self.pred_lbl)
+            scores['hcv'] = homogeneity_completeness_v_measure(self.true_lbl, self.pred_lbl)
+
+        return scores
     
-    def find_best_n_components(self, feats, labels, cluster_config):
+    def find_best_n_components(self, feats, cluster_config, labels=None):
         sil_scores = []
         ari_scores = []
         hom_scores = []
@@ -171,10 +183,12 @@ class Cluster(FB):
 
             scores = self.calculate_scores()
             sil_scores.append(scores['sil'])
-            ari_scores.append(scores['ari'])
-            hom_scores.append(scores['hcv'][0])
-            com_scores.append(scores['hcv'][1])
-            v_scores.append(scores['hcv'][2])
+
+            if self.true_lbl is not None:
+                ari_scores.append(scores['ari'])
+                hom_scores.append(scores['hcv'][0])
+                com_scores.append(scores['hcv'][1])
+                v_scores.append(scores['hcv'][2])
 
             if self.algo == 'kmeans':
                 sse.append(pipe[2][0].inertia_)
@@ -182,10 +196,12 @@ class Cluster(FB):
         plt.style.use("fivethirtyeight")
         plt.figure(figsize=(6, 6))
         plt.plot(range(2, 15), sil_scores, c="blue", label="Silhouette")
-        plt.plot(range(2, 15), ari_scores, c='red', label="ARI")
-        plt.plot(range(2, 15), hom_scores, c='orange', label="Homogeneity")
-        plt.plot(range(2, 15), com_scores, c='green', label="Completeness")
-        plt.plot(range(2, 15), v_scores, c='purple', label="V-measure")
+
+        if self.true_lbl is not None:
+            plt.plot(range(2, 15), ari_scores, c='red', label="ARI")
+            plt.plot(range(2, 15), hom_scores, c='orange', label="Homogeneity")
+            plt.plot(range(2, 15), com_scores, c='green', label="Completeness")
+            plt.plot(range(2, 15), v_scores, c='purple', label="V-measure")
 
         plt.xlabel("n_components")
         plt.legend(loc='best')
